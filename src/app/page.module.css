@@ -8,12 +8,45 @@
   padding: 0 0.5rem;
 }
 
-.sampleCell {
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  place-content: flex-end center;
+  width: 310px;
+  height: 390px;
+  padding: 0 15px 15px;
+  background-color: rgb(193 192 192);
+  border: 5px outset white;
+}
+
+.frameTop {
+  position: absolute;
+  top: 153px;
+  width: 280px;
+  height: 70px;
+  border: 5px inset white;
+}
+
+.frameBottom {
+  position: absolute;
+  top: 233px;
+  width: 280px;
+  height: 280px;
+  border: 5px inset white;
+}
+
+.cell {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 30px;
+  border: solid gray;
+  border-width: 1.5px 0 0 1.5px;
+}
+
+.design {
+  width: 30px;
+  height: 30px;
   background: url('~/src/assets/images/image.png') no-repeat;
-  border: 1px solid black;
 }
