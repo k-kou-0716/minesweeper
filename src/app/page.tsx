@@ -39,12 +39,14 @@ export default function Home() {
   ];
 
   //右クリック０（蓋），１（はてな），２（フラグ）～
-  // const rigthclickHandler = (x: number, y: number) => {
-  //   const newUserInputs = structuredClone(userInputs);
-  //   newUserInputs[y][x] = (newUserInputs[y][x] + 1) % 3;
-  //   setUserInputs(newUserInputs);
-  // };
-  //上を使って表示する
+  const rigthclickHandler = (x: number, y: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    //空いたところは触らない
+    const newUserInputs = structuredClone(userInputs);
+    if (newUserInputs[y][x] === 4) return;
+    newUserInputs[y][x] = (newUserInputs[y][x] + 1) % 3;
+    setUserInputs(newUserInputs);
+  };
 
   //左クリック４（開ける）
   const clickHandler = (x: number, y: number) => {
@@ -57,36 +59,65 @@ export default function Home() {
     //一度だけ爆弾を設置
     const newBombMap = structuredClone(bombMap);
     if (bombMap.flat().filter((cell) => cell === 1).length === 0) {
-      //ランダム（最初に開けたところとその周りには置かない）
+      //ランダム（最初に開けたところには置かない//9の所はレベルで変える
       const size = 9;
       let count = 0;
       while (count < 10) {
         const rx = Math.floor(Math.random() * size);
         const ry = Math.floor(Math.random() * size);
-        for (const [dx, dy] of directions) {
-          const nx = x + dx,
-            ny = y + dy;
-          if ((ry === y && rx === x) || (ry === ny && rx === nx) || newBombMap[ry][rx] === 1) {
-            count -= 1;
-          }
-          count += 1;
-          newBombMap[ry][rx] = 1;
+        if ((ry === y && rx === x) || newBombMap[ry][rx] === 1) {
+          continue;
         }
+        count += 1;
+        newBombMap[ry][rx] = 1;
       }
     }
     setBombMap(newBombMap);
   };
 
+  //userInputsとbombMapをもらう
+  const calcBoard = (userInputs: number[][], bombMap: number[][]) => {
+    const board: number[][] = [
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+
+    //全マス八方向見て爆弾の数を数える//9の所はレベルで変える
+    for (let y = 0; y < 9; y++) {
+      for (let x = 0; x < 9; x++) {
+        if (bombMap[y][x] === 1) {
+          board[y][x] = 11 + (userInputs[y][x] + 8) * 100;
+        } else {
+          let count = 0;
+          for (const [dx, dy] of directions) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < 9 && ny >= 0 && ny < 9 && bombMap[ny][nx] === 1) {
+              count += 1;
+            }
+          }
+          board[y][x] = count + (userInputs[y][x] + 8) * 100;
+        }
+      }
+    }
+
+    //再帰関数（calcBoard===0が連続してたら0以外が来るまで開けるuserInputs===4）
+    //このときbombMap=1だったらゲームオーバ、爆弾のマスを全部開ける、爆発したところを赤くする
+    //1211があったら終了、cssで赤くする、爆弾の位置を4
+
+    return board;
+  };
+
   console.log(userInputs);
   console.log(bombMap);
-
-  //userInputsとbombMapをもらう
-  // const calcBoard = (userInputs: number[][], bombMap: number[][]) => {};
-  //爆弾の周りをbombMap!==1のところ以外calcBoard+=1  ←これも状態が必要？
-  //再帰関数（calcBoard===0が連続してたら0以外が来るまで開けるuserInputs===4）
-  //userInputs==4のところはcalcBoardの数字を表示する
-  //このときbombMap=1だったらゲームオーバー
-
+  console.log(calcBoard(userInputs, bombMap));
   //装飾の要素がばらばらでclickが反応しない→cssを勉強する
   //.mapのところを計算値にする
   // <div className={styles.frameTop} />
@@ -94,11 +125,31 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <div className={styles.board}>
-        {userInputs.map((row, y) =>
+        {calcBoard(userInputs, bombMap).map((row, y) =>
           row.map((cell, x) => {
             return (
-              <div key={`${x}-${y}`} className={styles.cell} onClick={() => clickHandler(x, y)}>
-                <div className={styles.design} style={{ backgroundPosition: `${-30}px` }} />
+              <div
+                key={`${x}-${y}`}
+                className={styles.cell}
+                onClick={() => clickHandler(x, y)}
+                onContextMenu={(e) => rigthclickHandler(x, y, e)}
+              >
+                <div
+                  className={styles.design}
+                  style={{
+                    backgroundPosition:
+                      //空いたら数字か爆弾を表示
+                      cell >= 1200
+                        ? `${-30 * (cell % 100) + 30}px`
+                        : //閉じてたら旗かはてなを表示
+                          cell >= 900
+                          ? `${-30 * Math.floor(cell / 100) + 30}px`
+                          : //何も表示しない
+                            cell >= 800
+                            ? `30px`
+                            : undefined,
+                  }}
+                />
               </div>
             );
           }),
