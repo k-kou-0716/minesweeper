@@ -90,19 +90,22 @@ export default function Home() {
     ];
 
     //全マス八方向見て爆弾の数を数える//9の所はレベルで変える
+    //forをmapにする
     for (let y = 0; y < 9; y++) {
       for (let x = 0; x < 9; x++) {
         if (bombMap[y][x] === 1) {
+          //爆弾＋マーク
           board[y][x] = 11 + (userInputs[y][x] + 8) * 100;
         } else {
           let count = 0;
           for (const [dx, dy] of directions) {
             const nx = x + dx;
             const ny = y + dy;
-            if (nx >= 0 && nx < 9 && ny >= 0 && ny < 9 && bombMap[ny][nx] === 1) {
+            if (board[ny] !== undefined && board[ny][nx] !== undefined && bombMap[ny][nx] === 1) {
               count += 1;
             }
           }
+          //数字＋マーク
           board[y][x] = count + (userInputs[y][x] + 8) * 100;
         }
       }
@@ -111,49 +114,70 @@ export default function Home() {
     //再帰関数（calcBoard===0が連続してたら0以外が来るまで開けるuserInputs===4）
     //このときbombMap=1だったらゲームオーバ、爆弾のマスを全部開ける、爆発したところを赤くする
     //1211があったら終了、cssで赤くする、爆弾の位置を4
-
+    if (board.flat().includes(1211)) {
+      for (let y = 0; y < 9; y++) {
+        for (let x = 0; x < 9; x++) {
+          if (bombMap[y][x] === 1) {
+            //終了爆弾開示
+            board[y][x] += 400;
+          }
+        }
+      }
+    }
     return board;
   };
 
   console.log(userInputs);
   console.log(bombMap);
   console.log(calcBoard(userInputs, bombMap));
-  //装飾の要素がばらばらでclickが反応しない→cssを勉強する
-  //.mapのところを計算値にする
-  // <div className={styles.frameTop} />
-  //       <div className={styles.frameBottom} />
+
   return (
     <div className={styles.container}>
       <div className={styles.board}>
-        {calcBoard(userInputs, bombMap).map((row, y) =>
-          row.map((cell, x) => {
-            return (
-              <div
-                key={`${x}-${y}`}
-                className={styles.cell}
-                onClick={() => clickHandler(x, y)}
-                onContextMenu={(e) => rigthclickHandler(x, y, e)}
-              >
+        <div className={styles.frameTop} />
+        <div className={styles.frameBottom} />
+        <div className={styles.gameBoard}>
+          {calcBoard(userInputs, bombMap).map((row, y) =>
+            row.map((cell, x) => {
+              return (
                 <div
-                  className={styles.design}
-                  style={{
-                    backgroundPosition:
-                      //空いたら数字か爆弾を表示
-                      cell >= 1200
-                        ? `${-30 * (cell % 100) + 30}px`
-                        : //閉じてたら旗かはてなを表示
-                          cell >= 900
-                          ? `${-30 * Math.floor(cell / 100) + 30}px`
-                          : //何も表示しない
-                            cell >= 800
-                            ? `30px`
-                            : undefined,
-                  }}
-                />
-              </div>
-            );
-          }),
-        )}
+                  key={`${x}-${y}`}
+                  className={`${styles.cell} ${cell < 1200 ? styles.designBlank : ''}`}
+                  //開けて爆弾のところは1611、自動で開いた爆弾は1211
+                  style={{ background: cell === 1611 ? 'red' : '' }}
+                  onClick={
+                    calcBoard(userInputs, bombMap).flat().includes(1211)
+                      ? undefined
+                      : () => clickHandler(x, y)
+                  }
+                  onContextMenu={
+                    calcBoard(userInputs, bombMap).flat().includes(1211)
+                      ? undefined
+                      : (e) => rigthclickHandler(x, y, e)
+                  }
+                >
+                  <div
+                    className={styles.design}
+                    style={{
+                      backgroundPosition:
+                        //空いたら数字か爆弾を表示
+                        cell >= 1200
+                          ? `${-30 * (cell % 100) + 30}px`
+                          : //閉じてたら旗かはてなを表示
+                            cell >= 900
+                            ? //ここを27にしないとなぜかズレる(designBlankのboderを消すとズレない)、いずれ解明する
+                              `${-30 * Math.floor(cell / 100) + 27}px`
+                            : //何も表示しない
+                              cell >= 800
+                              ? `30px`
+                              : undefined,
+                    }}
+                  />
+                </div>
+              );
+            }),
+          )}
+        </div>
       </div>
     </div>
   );

@@ -9,30 +9,40 @@
 }
 
 .board {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  place-content: flex-end center;
+  align-items: center;
+  justify-content: center;
   width: 310px;
   height: 390px;
-  padding: 0 15px 15px;
   background-color: rgb(193 192 192);
-  border: 5px outset white;
+  border: 6px outset white;
 }
 
 .frameTop {
   position: absolute;
-  top: 153px;
-  width: 280px;
-  height: 70px;
-  border: 5px inset white;
+  top: 8px;
+  width: 282px;
+  height: 72px;
+  border: 6px inset white;
 }
 
 .frameBottom {
   position: absolute;
-  top: 233px;
-  width: 280px;
-  height: 280px;
-  border: 5px inset white;
+  top: 88px;
+  width: 282px;
+  height: 282px;
+  border: 6px inset white;
+}
+
+.gameBoard {
+  position: absolute;
+  top: 94px;
+  display: flex;
+  flex-wrap: wrap;
+  width: 270px;
+  height: 270px;
+  background-color: rgb(193 192 192);
 }
 
 .cell {
@@ -49,4 +59,10 @@
   width: 30px;
   height: 30px;
   background: url('~/src/assets/images/image.png') no-repeat;
+}
+
+.designBlank {
+  width: 30px;
+  height: 30px;
+  border: 4px outset white;
 }
