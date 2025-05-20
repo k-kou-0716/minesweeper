@@ -4,6 +4,8 @@ import { useState } from 'react';
 import styles from './page.module.css';
 
 export default function Home() {
+  const size = 9;
+
   const [userInputs, setUserInputs] = useState<number[][]>([
     [0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -60,11 +62,10 @@ export default function Home() {
     const newBombMap = structuredClone(bombMap);
     if (bombMap.flat().filter((cell) => cell === 1).length === 0) {
       //ランダム（最初に開けたところには置かない//9の所はレベルで変える
-      const size = 9;
       let count = 0;
       while (count < 10) {
-        const rx = Math.floor(Math.random() * size);
-        const ry = Math.floor(Math.random() * size);
+        const rx = Math.floor(Math.random() * 9);
+        const ry = Math.floor(Math.random() * 9);
         if ((ry === y && rx === x) || newBombMap[ry][rx] === 1) {
           continue;
         }
@@ -111,7 +112,29 @@ export default function Home() {
       }
     }
 
-    //再帰関数（calcBoard===0が連続してたら0以外が来るまで開けるuserInputs===4）
+    //再帰関数（calcBoard===800が連続してたら800以外が来るまで開ける
+    const zeroCheck = (x: number, y: number) => {
+      for (const [dx, dy] of directions) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (board[ny] !== undefined && board[ny][nx] !== undefined && board[ny][nx] < 1200) {
+          if (board[ny][nx] % 100 !== 0) {
+            board[ny][nx] += 400;
+          } else {
+            board[ny][nx] += 400;
+            zeroCheck(nx, ny);
+          }
+        }
+      }
+    };
+    for (let y = 0; y < 9; y++) {
+      for (let x = 0; x < 9; x++) {
+        if (board[y][x] === 1200) {
+          zeroCheck(x, y);
+        }
+      }
+    }
+
     //このときbombMap=1だったらゲームオーバ、爆弾のマスを全部開ける、爆発したところを赤くする
     //1211があったら終了、cssで赤くする、爆弾の位置を4
     if (board.flat().includes(1211)) {
@@ -133,10 +156,13 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.board}>
-        <div className={styles.frameTop} />
-        <div className={styles.frameBottom} />
-        <div className={styles.gameBoard}>
+      <div className={styles.board} style={{ width: 30 * size + 40, height: 30 * size + 120 }}>
+        <div className={styles.frameTop} style={{ width: 30 * size + 12 }} />
+        <div
+          className={styles.frameBottom}
+          style={{ width: 30 * size + 12, height: 30 * size + 12 }}
+        />
+        <div className={styles.gameBoard} style={{ width: 30 * size, height: 30 * size }}>
           {calcBoard(userInputs, bombMap).map((row, y) =>
             row.map((cell, x) => {
               return (
