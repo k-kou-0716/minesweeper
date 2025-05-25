@@ -3,33 +3,16 @@
 import { useState } from 'react';
 import styles from './page.module.css';
 
-export default function Home() {
-  const size = 9;
+// 定数は外で定義
+const HEIGHT = 9;
+const WIDTH = 9;
+const BOMBCOUNT = 10;
 
-  const [userInputs, setUserInputs] = useState<number[][]>([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]);
-  const [bombMap, setBombMap] = useState<number[][]>([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]);
-
-  const directions = [
+// userInputsとbombMapをもらう
+function calcBoard(
+  userInputs: number[][],
+  bombMap: number[][],
+  directions = [
     [0, -1],
     [1, -1],
     [1, 0],
@@ -38,12 +21,77 @@ export default function Home() {
     [-1, 1],
     [-1, 0],
     [-1, -1],
-  ];
+  ],
+) {
+  const board: number[][] = Array.from({ length: HEIGHT }, () =>
+    Array.from({ length: WIDTH }, () => 0),
+  );
+
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (bombMap[y][x] === 1) {
+        board[y][x] = 11 + (userInputs[y][x] + 8) * 100;
+      } else {
+        let count = 0;
+        for (const [dx, dy] of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (board[ny] !== undefined && board[ny][nx] !== undefined && bombMap[ny][nx] === 1) {
+            count += 1;
+          }
+        }
+        board[y][x] = count + (userInputs[y][x] + 8) * 100;
+      }
+    }
+  }
+
+  const zeroCheck = (x: number, y: number) => {
+    for (const [dx, dy] of directions) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (board[ny] !== undefined && board[ny][nx] !== undefined && board[ny][nx] < 1200) {
+        if (board[ny][nx] % 100 !== 0) {
+          board[ny][nx] += 400;
+        } else {
+          board[ny][nx] += 400;
+          zeroCheck(nx, ny);
+        }
+      }
+    }
+  };
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (board[y][x] === 1200) {
+        zeroCheck(x, y);
+      }
+    }
+  }
+
+  if (board.flat().includes(1211)) {
+    for (let y = 0; y < HEIGHT; y++) {
+      for (let x = 0; x < WIDTH; x++) {
+        if (bombMap[y][x] === 1) {
+          board[y][x] += 400;
+        }
+      }
+    }
+  }
+  return board;
+}
+
+export default function Home() {
+  // ユーザーの入力
+  const [userInputs, setUserInputs] = useState<number[][]>(
+    Array.from({ length: HEIGHT }, () => Array.from({ length: WIDTH }, () => 0)),
+  );
+  // 爆弾の配置
+  const [bombMap, setBombMap] = useState<number[][]>(
+    Array.from({ length: HEIGHT }, () => Array.from({ length: WIDTH }, () => 0)),
+  );
 
   //右クリック０（蓋），１（はてな），２（フラグ）～
   const rigthclickHandler = (x: number, y: number, e: React.MouseEvent) => {
     e.preventDefault();
-    //空いたところは触らない
     const newUserInputs = structuredClone(userInputs);
     if (newUserInputs[y][x] === 4) return;
     newUserInputs[y][x] = (newUserInputs[y][x] + 1) % 3;
@@ -53,19 +101,17 @@ export default function Home() {
   //左クリック４（開ける）
   const clickHandler = (x: number, y: number) => {
     const newUserInputs = structuredClone(userInputs);
-    //蓋（０）のところ以外開けない
     if (newUserInputs[y][x] !== 0) return;
     newUserInputs[y][x] = 4;
     setUserInputs(newUserInputs);
 
-    //一度だけ爆弾を設置
+    //爆弾を設置
     const newBombMap = structuredClone(bombMap);
     if (bombMap.flat().filter((cell) => cell === 1).length === 0) {
-      //ランダム（最初に開けたところには置かない//9の所はレベルで変える
       let count = 0;
-      while (count < 10) {
-        const rx = Math.floor(Math.random() * 9);
-        const ry = Math.floor(Math.random() * 9);
+      while (count < BOMBCOUNT) {
+        const rx = Math.floor(Math.random() * WIDTH);
+        const ry = Math.floor(Math.random() * HEIGHT);
         if ((ry === y && rx === x) || newBombMap[ry][rx] === 1) {
           continue;
         }
@@ -76,93 +122,51 @@ export default function Home() {
     setBombMap(newBombMap);
   };
 
-  //userInputsとbombMapをもらう
-  const calcBoard = (userInputs: number[][], bombMap: number[][]) => {
-    const board: number[][] = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ];
+  const bombNumber = BOMBCOUNT - userInputs.flat().filter((cell) => cell === 2).length;
 
-    //全マス八方向見て爆弾の数を数える//9の所はレベルで変える
-    //forをmapにする
-    for (let y = 0; y < 9; y++) {
-      for (let x = 0; x < 9; x++) {
-        if (bombMap[y][x] === 1) {
-          //爆弾＋マーク
-          board[y][x] = 11 + (userInputs[y][x] + 8) * 100;
-        } else {
-          let count = 0;
-          for (const [dx, dy] of directions) {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (board[ny] !== undefined && board[ny][nx] !== undefined && bombMap[ny][nx] === 1) {
-              count += 1;
-            }
-          }
-          //数字＋マーク
-          board[y][x] = count + (userInputs[y][x] + 8) * 100;
-        }
+  // リセット時
+  const smileHandler = () => {
+    const newUserInputs = structuredClone(userInputs);
+    const newBombMap = structuredClone(bombMap);
+    for (let y = 0; y < HEIGHT; y++) {
+      for (let x = 0; x < WIDTH; x++) {
+        newUserInputs[y][x] = 0;
+        newBombMap[y][x] = 0;
       }
     }
-
-    //再帰関数（calcBoard===800が連続してたら800以外が来るまで開ける
-    const zeroCheck = (x: number, y: number) => {
-      for (const [dx, dy] of directions) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (board[ny] !== undefined && board[ny][nx] !== undefined && board[ny][nx] < 1200) {
-          if (board[ny][nx] % 100 !== 0) {
-            board[ny][nx] += 400;
-          } else {
-            board[ny][nx] += 400;
-            zeroCheck(nx, ny);
-          }
-        }
-      }
-    };
-    for (let y = 0; y < 9; y++) {
-      for (let x = 0; x < 9; x++) {
-        if (board[y][x] === 1200) {
-          zeroCheck(x, y);
-        }
-      }
-    }
-
-    //このときbombMap=1だったらゲームオーバ、爆弾のマスを全部開ける、爆発したところを赤くする
-    //1211があったら終了、cssで赤くする、爆弾の位置を4
-    if (board.flat().includes(1211)) {
-      for (let y = 0; y < 9; y++) {
-        for (let x = 0; x < 9; x++) {
-          if (bombMap[y][x] === 1) {
-            //終了爆弾開示
-            board[y][x] += 400;
-          }
-        }
-      }
-    }
-    return board;
+    setUserInputs(newUserInputs);
+    setBombMap(newBombMap);
   };
-
-  console.log(userInputs);
-  console.log(bombMap);
-  console.log(calcBoard(userInputs, bombMap));
 
   return (
     <div className={styles.container}>
-      <div className={styles.board} style={{ width: 30 * size + 40, height: 30 * size + 120 }}>
-        <div className={styles.frameTop} style={{ width: 30 * size + 12 }} />
+      <div className={styles.board} style={{ width: 30 * WIDTH + 40, height: 30 * HEIGHT + 120 }}>
+        <div className={styles.frameTop} style={{ width: 30 * WIDTH + 12 }} />
         <div
           className={styles.frameBottom}
-          style={{ width: 30 * size + 12, height: 30 * size + 12 }}
+          style={{ width: 30 * WIDTH + 12, height: 30 * HEIGHT + 12 }}
         />
-        <div className={styles.gameBoard} style={{ width: 30 * size, height: 30 * size }}>
+        <div
+          className={styles.smile}
+          onClick={smileHandler}
+          onMouseDown={(e) => e.currentTarget.classList.add(styles.pressed)}
+          onMouseUp={(e) => e.currentTarget.classList.remove(styles.pressed)}
+          onMouseLeave={(e) => e.currentTarget.classList.remove(styles.pressed)}
+        >
+          <div
+            className={styles.design}
+            style={{
+              backgroundPosition: calcBoard(userInputs, bombMap).flat().includes(1211)
+                ? '-390px'
+                : '-330px',
+            }}
+          />
+        </div>
+        <div className={styles.time} />
+        <div className={styles.bombNumber} style={{ color: 'red' }}>
+          {bombNumber}
+        </div>
+        <div className={styles.gameBoard} style={{ width: 30 * WIDTH, height: 30 * HEIGHT }}>
           {calcBoard(userInputs, bombMap).map((row, y) =>
             row.map((cell, x) => {
               return (

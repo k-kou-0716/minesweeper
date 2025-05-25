@@ -14,20 +14,83 @@
   align-items: center;
   justify-content: center;
   background-color: rgb(193 192 192);
-  border: 6px outset white;
+  border-top: solid 6px white;
+  border-right: solid 6px gray;
+  border-bottom: solid 6px gray;
+  border-left: solid 6px white;
 }
 
 .frameTop {
   position: absolute;
   top: 8px;
   height: 72px;
-  border: 6px inset white;
+  border-top: solid 6px gray;
+  border-right: solid 6px white;
+  border-bottom: solid 6px white;
+  border-left: solid 6px gray;
 }
 
 .frameBottom {
   position: absolute;
   top: 88px;
-  border: 6px inset white;
+  border-top: solid 6px gray;
+  border-right: solid 6px white;
+  border-bottom: solid 6px white;
+  border-left: solid 6px gray;
+}
+
+.bombNumber {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 80px;
+  height: 45px;
+  background-color: black;
+  border-top: solid 1px gray;
+  border-right: solid 1px white;
+  border-bottom: solid 1px white;
+  border-left: solid 1px gray;
+}
+
+.smile {
+  position: absolute;
+  top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  border-top: solid 4px white;
+  border-right: solid 4px gray;
+  border-bottom: solid 4px gray;
+  border-left: solid 4px white;
+}
+
+.pressed {
+  position: absolute;
+  top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  border-top: solid 4px gray;
+  border-right: solid 4px white;
+  border-bottom: solid 4px white;
+  border-left: solid 4px gray;
+}
+
+.time {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  width: 80px;
+  height: 45px;
+  background-color: black;
+  border-top: solid 1px gray;
+  border-right: solid 1px white;
+  border-bottom: solid 1px white;
+  border-left: solid 1px gray;
 }
 
 .gameBoard {
@@ -57,5 +120,8 @@
 .designBlank {
   width: 30px;
   height: 30px;
-  border: 4px outset white;
+  border-top: solid 4px white;
+  border-right: solid 4px gray;
+  border-bottom: solid 4px gray;
+  border-left: solid 4px white;
 }
