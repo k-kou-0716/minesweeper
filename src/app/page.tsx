@@ -20,7 +20,7 @@ interface gameModeSetting {
   levelName: string;
 }
 
-//難易度ごと設定
+//難易度ごと設定 gameModeがkeyとなり対応する物を持ってくる
 const GAMEMODE_SETTINGS: Record<gameMode, gameModeSetting> = {
   easy: { height: 9, width: 9, bombs: 10, levelName: '初級' },
   normal: { height: 16, width: 16, bombs: 40, levelName: '中級' },
@@ -122,7 +122,7 @@ function calcBoard(
     }
   }
 
-  //爆弾が開かれた場合、爆弾の位置に400を加算
+  //爆弾が開かれた場合、爆弾の位置に400を足す
   if (board.flat().includes(1211)) {
     for (let y = 0; y < currentHeight; y++) {
       for (let x = 0; x < currentWidth; x++) {
@@ -134,12 +134,6 @@ function calcBoard(
   }
   return board;
 }
-
-//時計を作る
-
-//右か左クリックされたら時計スタート
-
-//リセット、難易度変更、更新で時計ストップ
 
 export default function Home() {
   //ユーザー操作
@@ -172,12 +166,28 @@ export default function Home() {
   });
 
   //時計
+  const [timecount, setTimeCount] = useState(0);
 
-  //盤面データとゲームオーバー状態を計算
-  //ゲームクリアを作る
+  // useEffect(() => {
+  //   const timerId = setInterval(() => {
+  //     setTimeCount((prevCount) => prevCount + 1);
+  //   }, 1000);
+
+  //   return () => {
+  //     clearInterval(timerId);
+  //   };
+  // }, []);
+
+  //盤面データ
   const calcBoardDate = calcBoard(userInputs, bombMap, boardSize.height, boardSize.width);
-  const GameOver = calcBoardDate.flat().includes(1211);
-  // const GameClear
+  //開けた爆弾がないか
+  const GameOver = calcBoardDate.flat().includes(1211) || calcBoardDate.flat().includes(1611);
+  //残りのマス目が爆弾の数と同じか（爆弾の数 = 全マス + 開けて爆弾だったマス - 開けたマス）
+  const GameClear =
+    bombCount.count ===
+    boardSize.height * boardSize.width +
+      calcBoardDate.flat().filter((cell) => cell === 1211 || cell === 1611).length -
+      calcBoardDate.flat().filter((cell) => cell >= 1200).length;
 
   //盤面リセット
   const resetBoard = (height: number, width: number, count: number) => {
@@ -210,6 +220,7 @@ export default function Home() {
     //カスタム設定更新
     if (selectedMode === 'custom') {
       //ここ綺麗にできそう
+      //入力値
       const heightInput = Number(boardSize.inputH),
         widthInput = Number(boardSize.inputW),
         bombsInput = Number(bombCount.inputB);
@@ -240,7 +251,7 @@ export default function Home() {
   const rightClickHandler = (x: number, y: number, e: React.MouseEvent) => {
     //メニューを開かない
     e.preventDefault();
-    if (GameOver || userInputs[y][x] === 4) return;
+    if (userInputs[y][x] === 4) return;
     const newUserInputs = structuredClone(userInputs);
     newUserInputs[y][x] = (newUserInputs[y][x] + 1) % 3;
     setUserInputs(newUserInputs);
@@ -248,7 +259,7 @@ export default function Home() {
 
   // 左クリック処理
   const clickHandler = (x: number, y: number) => {
-    if (GameOver || userInputs[y][x] === 4) return;
+    if (userInputs[y][x] === 4) return;
 
     const newBombMap = structuredClone(bombMap);
     if (!newBombMap.flat().some((cell) => cell === 1)) {
@@ -272,6 +283,10 @@ export default function Home() {
 
   //残り爆弾数
   const bombNumberDisplay = bombCount.count - userInputs.flat().filter((cell) => cell === 2).length;
+
+  console.log(userInputs);
+  console.log(calcBoardDate);
+  console.log(GameOver);
 
   return (
     <div className={styles.container}>
@@ -336,10 +351,10 @@ export default function Home() {
         <div className={styles.smile} onClick={resetClickHandler}>
           <div
             className={styles.design}
-            style={{ backgroundPosition: GameOver ? '-390px' : '-330px' }}
+            style={{ backgroundPosition: GameOver ? '-390px' : GameClear ? '-360px' : '-330px' }}
           />
         </div>
-        <div className={styles.time} />
+        <div className={styles.time}>{timecount}</div>
         <div className={styles.bombNumberDisplay} style={{ color: 'red' }}>
           {bombNumberDisplay}
         </div>
@@ -353,8 +368,10 @@ export default function Home() {
                 key={`${x}-${y}`}
                 className={`${styles.cell} ${cell < 1200 ? styles.cover : ''}`}
                 style={{ background: cell === 1611 ? 'red' : '' }}
-                onClick={GameOver ? undefined : () => clickHandler(x, y)}
-                onContextMenu={GameOver ? undefined : (e) => rightClickHandler(x, y, e)}
+                onClick={GameOver || GameClear ? undefined : () => clickHandler(x, y)}
+                onContextMenu={
+                  GameOver || GameClear ? undefined : (e) => rightClickHandler(x, y, e)
+                }
               >
                 <div
                   className={styles.design}
