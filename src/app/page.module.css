@@ -3,9 +3,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  min-height: 100vh;
-  padding: 0 0.5rem;
+  padding: 10px;
 }
 
 .board {
@@ -39,7 +37,7 @@
   border-left: solid 6px gray;
 }
 
-.bombNumber {
+.bombNumberDisplay {
   position: absolute;
   top: 22px;
   left: 22px;
@@ -102,6 +100,7 @@
 }
 
 .cell {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,9 +116,7 @@
   background: url('~/src/assets/images/image.png') no-repeat;
 }
 
-.designBlank {
-  width: 30px;
-  height: 30px;
+.cover {
   border-top: solid 4px white;
   border-right: solid 4px gray;
   border-bottom: solid 4px gray;
