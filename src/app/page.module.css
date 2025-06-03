@@ -64,7 +64,7 @@
   border-left: solid 4px white;
 }
 
-.pressed {
+.smile:active {
   position: absolute;
   top: 22px;
   display: flex;
