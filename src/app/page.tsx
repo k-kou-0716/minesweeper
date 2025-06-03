@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './page.module.css';
+
+//やること
+//一つの関数に機能を詰めすぎている=>分割する(calcBoard、leftClickHandler、resetClickHandler)
+//マジックナンバーを消す=>cellの状態を定義する、もしくは、cellにタプル型？などを利用し、2つの情報を入れる
+//型を制限して不自由にする
+//見た目が悪い=>時計、爆弾の残数の素材を拾ってくる
+//動作が重い=>どうしたら改善するのかよくわからない、再帰関数かcalcBoard
 
 //カスタムの初期値
 const DEFAULT_CUSTOM_HEIGHT = 10;
@@ -9,19 +16,19 @@ const DEFAULT_CUSTOM_WIDTH = 10;
 const DEFAULT_CUSTOM_BOMBCOUNT = 15;
 
 //難易度の種類を定義
-type level = 'easy' | 'normal' | 'hard';
-type gameMode = level | 'custom';
+type Level = 'easy' | 'normal' | 'hard';
+type GameMode = Level | 'custom';
 
 //難易度の設定の定義
-interface gameModeSetting {
+interface GameModeSetting {
   height: number;
   width: number;
   bombs: number;
   levelName: string;
 }
 
-//難易度ごと設定 gameModeがkeyとなり対応する物を持ってくる
-const GAMEMODE_SETTINGS: Record<gameMode, gameModeSetting> = {
+//難易度ごと設定 GameModeがkeyとなり対応する物を持ってくる
+const GAMEMODE_SETTINGS: Record<GameMode, GameModeSetting> = {
   easy: { height: 9, width: 9, bombs: 10, levelName: '初級' },
   normal: { height: 16, width: 16, bombs: 40, levelName: '中級' },
   hard: { height: 16, width: 30, bombs: 99, levelName: '上級' },
@@ -32,18 +39,19 @@ const GAMEMODE_SETTINGS: Record<gameMode, gameModeSetting> = {
     levelName: 'カスタム',
   },
 };
-//inputHなどを使わないと数字を入力したらすぐに盤面が変わってしまうので、適用しないと変わらないようにするため
+
 //盤面サイズの定義
-interface boardSizeState {
+interface BoardSize {
   height: number;
   width: number;
-  inputH: string;
-  inputW: string;
+  inputHeight: string;
+  inputWidthidth: string;
 }
+
 //爆弾数の定義
-interface bombCountState {
+interface BombCount {
   count: number;
-  inputB: string;
+  inputBombs: string;
 }
 
 //計算値
@@ -93,7 +101,7 @@ function calcBoard(
   }
 
   //再帰関数  boardSizeが70×70近くになると落ちる
-  const zeroCheck = (x: number, y: number) => {
+  const openZeroCheck = (x: number, y: number) => {
     for (const [dx, dy] of directions) {
       const nx = x + dx;
       const ny = y + dy;
@@ -109,7 +117,7 @@ function calcBoard(
           board[ny][nx] += 400;
         } else {
           board[ny][nx] += 400;
-          zeroCheck(nx, ny);
+          openZeroCheck(nx, ny);
         }
       }
     }
@@ -117,7 +125,7 @@ function calcBoard(
   for (let y = 0; y < currentHeight; y++) {
     for (let x = 0; x < currentWidth; x++) {
       if (board[y][x] === 1200) {
-        zeroCheck(x, y);
+        openZeroCheck(x, y);
       }
     }
   }
@@ -149,68 +157,79 @@ export default function Home() {
     ),
   );
   //級選択
-  const [selectedMode, setSelectedMode] = useState<gameMode>('easy');
+  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('easy');
 
   //盤面サイズ
-  const [boardSize, setboardSize] = useState<boardSizeState>({
+  const [boardSize, setBoardSize] = useState<BoardSize>({
     height: GAMEMODE_SETTINGS.easy.height,
     width: GAMEMODE_SETTINGS.easy.width,
-    inputH: String(GAMEMODE_SETTINGS.easy.height),
-    inputW: String(GAMEMODE_SETTINGS.easy.width),
+    inputHeight: String(GAMEMODE_SETTINGS.easy.height),
+    inputWidthidth: String(GAMEMODE_SETTINGS.easy.width),
   });
 
   //爆弾数
-  const [bombCount, setbombCount] = useState<bombCountState>({
+  const [bombCount, setBombCount] = useState<BombCount>({
     count: GAMEMODE_SETTINGS.easy.bombs,
-    inputB: String(GAMEMODE_SETTINGS.easy.bombs),
+    inputBombs: String(GAMEMODE_SETTINGS.easy.bombs),
   });
 
-  //時計
-  const [timecount, setTimeCount] = useState(0);
-
-  // useEffect(() => {
-  //   const timerId = setInterval(() => {
-  //     setTimeCount((prevCount) => prevCount + 1);
-  //   }, 1000);
-
-  //   return () => {
-  //     clearInterval(timerId);
-  //   };
-  // }, []);
+  //カウントアップ
+  const [timeCount, setTimeCount] = useState(0);
 
   //盤面データ
-  const calcBoardDate = calcBoard(userInputs, bombMap, boardSize.height, boardSize.width);
+  const calculatedBoardData = calcBoard(userInputs, bombMap, boardSize.height, boardSize.width);
+
   //開けた爆弾がないか
-  const GameOver = calcBoardDate.flat().includes(1211) || calcBoardDate.flat().includes(1611);
+  const isGameOver =
+    calculatedBoardData.flat().includes(1211) || calculatedBoardData.flat().includes(1611);
   //残りのマス目が爆弾の数と同じか（爆弾の数 = 全マス + 開けて爆弾だったマス - 開けたマス）
-  const GameClear =
+  const isGameClear =
     bombCount.count ===
     boardSize.height * boardSize.width +
-      calcBoardDate.flat().filter((cell) => cell === 1211 || cell === 1611).length -
-      calcBoardDate.flat().filter((cell) => cell >= 1200).length;
+      calculatedBoardData.flat().filter((cell) => cell === 1211 || cell === 1611).length -
+      calculatedBoardData.flat().filter((cell) => cell >= 1200).length;
+
+  useEffect(() => {
+    // ゲームが進行中かどうか
+    const isGameInProgress =
+      bombMap.flat().some((cell) => cell === 1) && !isGameOver && !isGameClear;
+
+    // ゲームが進行中ならタイマーを開始する
+    if (isGameInProgress) {
+      const timerId = setInterval(() => {
+        setTimeCount((prevCount) => prevCount + 1);
+      }, 1000);
+
+      //前のタイマーが残り続けないように消す
+      return () => {
+        clearInterval(timerId);
+      };
+    }
+    // bombMap, isGameOver, isGameClearの状態が変わるたびに更新
+  }, [bombMap, isGameOver, isGameClear]);
 
   //盤面リセット
   const resetBoard = (height: number, width: number, count: number) => {
-    setboardSize({ height, width, inputH: String(height), inputW: String(width) });
-    setbombCount({ count, inputB: String(count) });
+    setBoardSize({ height, width, inputHeight: String(height), inputWidthidth: String(width) });
+    setBombCount({ count, inputBombs: String(count) });
     setUserInputs(Array.from({ length: height }, () => Array.from({ length: width }, () => 0)));
     setBombMap(Array.from({ length: height }, () => Array.from({ length: width }, () => 0)));
+    setTimeCount(0);
   };
 
   // 難易度変更
-  const modeChangeClickHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const changeModeClickHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
     //as~として扱う（使いすぎ注意）理解あさい
-    const newMode = e.target.value as gameMode;
-    setSelectedMode(newMode);
+    const newGameMode = e.target.value as GameMode;
+    setSelectedGameMode(newGameMode);
 
-    if (newMode !== 'custom') {
+    if (newGameMode !== 'custom') {
       resetBoard(
-        GAMEMODE_SETTINGS[newMode].height,
-        GAMEMODE_SETTINGS[newMode].width,
-        GAMEMODE_SETTINGS[newMode].bombs,
+        GAMEMODE_SETTINGS[newGameMode].height,
+        GAMEMODE_SETTINGS[newGameMode].width,
+        GAMEMODE_SETTINGS[newGameMode].bombs,
       );
     } else {
-      //ここを入力値にする
       resetBoard(DEFAULT_CUSTOM_HEIGHT, DEFAULT_CUSTOM_WIDTH, DEFAULT_CUSTOM_BOMBCOUNT);
     }
   };
@@ -218,13 +237,13 @@ export default function Home() {
   //カスタム設定更新,リセット
   const resetClickHandler = () => {
     //カスタム設定更新
-    if (selectedMode === 'custom') {
+    if (selectedGameMode === 'custom') {
       //ここ綺麗にできそう
       //入力値
-      const heightInput = Number(boardSize.inputH),
-        widthInput = Number(boardSize.inputW),
-        bombsInput = Number(bombCount.inputB);
-      //カスタムの範囲指定bombsInputを<=にするには再帰関数を直さなければいけない
+      const heightInput = Number(boardSize.inputHeight),
+        widthInput = Number(boardSize.inputWidthidth),
+        bombsInput = Number(bombCount.inputBombs);
+      //場合によってalertを変える
       if (
         1 <= heightInput &&
         heightInput <= 100 &&
@@ -240,9 +259,9 @@ export default function Home() {
     } else {
       //リセット
       resetBoard(
-        GAMEMODE_SETTINGS[selectedMode].height,
-        GAMEMODE_SETTINGS[selectedMode].width,
-        GAMEMODE_SETTINGS[selectedMode].bombs,
+        GAMEMODE_SETTINGS[selectedGameMode].height,
+        GAMEMODE_SETTINGS[selectedGameMode].width,
+        GAMEMODE_SETTINGS[selectedGameMode].bombs,
       );
     }
   };
@@ -258,13 +277,15 @@ export default function Home() {
   };
 
   // 左クリック処理
-  const clickHandler = (x: number, y: number) => {
+  const leftClickHandler = (x: number, y: number) => {
     if (userInputs[y][x] === 4) return;
 
     const newBombMap = structuredClone(bombMap);
     if (!newBombMap.flat().some((cell) => cell === 1)) {
-      let count = 0;
+      setTimeCount(0);
 
+      //爆弾を初期設置
+      let count = 0;
       while (count < bombCount.count) {
         const rx = Math.floor(Math.random() * boardSize.width);
         const ry = Math.floor(Math.random() * boardSize.height);
@@ -284,27 +305,23 @@ export default function Home() {
   //残り爆弾数
   const bombNumberDisplay = bombCount.count - userInputs.flat().filter((cell) => cell === 2).length;
 
-  console.log(userInputs);
-  console.log(calcBoardDate);
-  console.log(GameOver);
-
   return (
     <div className={styles.container}>
       <div>
-        <select value={selectedMode} onChange={modeChangeClickHandler}>
+        <select value={selectedGameMode} onChange={changeModeClickHandler}>
           <option value="easy">初級</option>
           <option value="normal">中級</option>
           <option value="hard">上級</option>
           <option value="custom">カスタム</option>
         </select>
-        {selectedMode === 'custom' && (
+        {selectedGameMode === 'custom' && (
           <div>
             <label>
               幅:{' '}
               <input
                 type="number"
-                value={boardSize.inputW}
-                onChange={(e) => setboardSize((p) => ({ ...p, inputW: e.target.value }))}
+                value={boardSize.inputWidthidth}
+                onChange={(e) => setBoardSize((p) => ({ ...p, inputWidthidth: e.target.value }))}
                 style={{ width: '50px' }}
               />
             </label>
@@ -312,8 +329,8 @@ export default function Home() {
               高さ:{' '}
               <input
                 type="number"
-                value={boardSize.inputH}
-                onChange={(e) => setboardSize((p) => ({ ...p, inputH: e.target.value }))}
+                value={boardSize.inputHeight}
+                onChange={(e) => setBoardSize((p) => ({ ...p, inputHeight: e.target.value }))}
                 style={{ width: '50px' }}
               />
             </label>
@@ -321,8 +338,8 @@ export default function Home() {
               爆弾:{' '}
               <input
                 type="number"
-                value={bombCount.inputB}
-                onChange={(e) => setbombCount((p) => ({ ...p, inputB: e.target.value }))}
+                value={bombCount.inputBombs}
+                onChange={(e) => setBombCount((p) => ({ ...p, inputBombs: e.target.value }))}
                 style={{ width: '50px' }}
               />
             </label>
@@ -351,10 +368,14 @@ export default function Home() {
         <div className={styles.smile} onClick={resetClickHandler}>
           <div
             className={styles.design}
-            style={{ backgroundPosition: GameOver ? '-390px' : GameClear ? '-360px' : '-330px' }}
+            style={{
+              backgroundPosition: isGameOver ? '-390px' : isGameClear ? '-360px' : '-330px',
+            }}
           />
         </div>
-        <div className={styles.time}>{timecount}</div>
+        <div className={styles.time} style={{ color: 'red' }}>
+          {timeCount}
+        </div>
         <div className={styles.bombNumberDisplay} style={{ color: 'red' }}>
           {bombNumberDisplay}
         </div>
@@ -362,15 +383,15 @@ export default function Home() {
           className={styles.gameBoard}
           style={{ width: 30 * boardSize.width, height: 30 * boardSize.height }}
         >
-          {calcBoardDate.map((row, y) =>
+          {calculatedBoardData.map((row, y) =>
             row.map((cell, x) => (
               <div
                 key={`${x}-${y}`}
                 className={`${styles.cell} ${cell < 1200 ? styles.cover : ''}`}
                 style={{ background: cell === 1611 ? 'red' : '' }}
-                onClick={GameOver || GameClear ? undefined : () => clickHandler(x, y)}
+                onClick={isGameOver || isGameClear ? undefined : () => leftClickHandler(x, y)}
                 onContextMenu={
-                  GameOver || GameClear ? undefined : (e) => rightClickHandler(x, y, e)
+                  isGameOver || isGameClear ? undefined : (e) => rightClickHandler(x, y, e)
                 }
               >
                 <div
