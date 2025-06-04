@@ -10,14 +10,10 @@ import styles from './page.module.css';
 //見た目が悪い=>時計、爆弾の残数の素材を拾ってくる
 //動作が重い=>どうしたら改善するのかよくわからない、再帰関数かcalcBoard
 
-//カスタムの初期値
-const DEFAULT_CUSTOM_HEIGHT = 10;
-const DEFAULT_CUSTOM_WIDTH = 10;
-const DEFAULT_CUSTOM_BOMBCOUNT = 15;
-
 //難易度の種類を定義
-type Level = 'easy' | 'normal' | 'hard';
-type GameMode = Level | 'custom';
+//[number]インデックスアクセス型、要素すべて持ってくるユニオン型
+//type Level = (typeof STANDARD_LEVELS)[number]; 今後使うかも
+type GameMode = (typeof GAME_MODES)[number];
 
 //難易度の設定の定義
 interface GameModeSetting {
@@ -26,19 +22,6 @@ interface GameModeSetting {
   bombs: number;
   levelName: string;
 }
-
-//難易度ごと設定 GameModeがkeyとなり対応する物を持ってくる
-const GAMEMODE_SETTINGS: Record<GameMode, GameModeSetting> = {
-  easy: { height: 9, width: 9, bombs: 10, levelName: '初級' },
-  normal: { height: 16, width: 16, bombs: 40, levelName: '中級' },
-  hard: { height: 16, width: 30, bombs: 99, levelName: '上級' },
-  custom: {
-    height: DEFAULT_CUSTOM_HEIGHT,
-    width: DEFAULT_CUSTOM_WIDTH,
-    bombs: DEFAULT_CUSTOM_BOMBCOUNT,
-    levelName: 'カスタム',
-  },
-};
 
 //盤面サイズの定義
 interface BoardSize {
@@ -53,6 +36,29 @@ interface BombCount {
   count: number;
   inputBombs: string;
 }
+
+//カスタムの初期値
+const DEFAULT_CUSTOM_HEIGHT = 10;
+const DEFAULT_CUSTOM_WIDTH = 10;
+const DEFAULT_CUSTOM_BOMBCOUNT = 15;
+
+//難易度の種類
+//as const 定数として扱い読み取るだけ、配列にすることでLevelName変更時に二重管理をしなくていい
+const STANDARD_LEVELS = ['easy', 'normal', 'hard'] as const;
+const GAME_MODES = [...STANDARD_LEVELS, 'custom'] as const;
+
+//難易度ごと設定 GameModeがkeyとなり対応する物を持ってくる
+const GAMEMODE_SETTINGS: Record<GameMode, GameModeSetting> = {
+  easy: { height: 9, width: 9, bombs: 10, levelName: '初級' },
+  normal: { height: 16, width: 16, bombs: 40, levelName: '中級' },
+  hard: { height: 16, width: 30, bombs: 99, levelName: '上級' },
+  custom: {
+    height: DEFAULT_CUSTOM_HEIGHT,
+    width: DEFAULT_CUSTOM_WIDTH,
+    bombs: DEFAULT_CUSTOM_BOMBCOUNT,
+    levelName: 'カスタム',
+  },
+};
 
 const DIRECTIONS = [
   [0, -1],
@@ -345,10 +351,11 @@ export default function Home() {
     <div className={styles.container}>
       <div>
         <select value={selectedGameMode} onChange={changeModeClickHandler}>
-          <option value="easy">初級</option>
-          <option value="normal">中級</option>
-          <option value="hard">上級</option>
-          <option value="custom">カスタム</option>
+          {GAME_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {GAMEMODE_SETTINGS[mode].levelName}
+            </option>
+          ))}
         </select>
         {selectedGameMode === 'custom' && (
           <div>
