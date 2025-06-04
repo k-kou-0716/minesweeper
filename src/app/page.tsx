@@ -45,7 +45,7 @@ interface BoardSize {
   height: number;
   width: number;
   inputHeight: string;
-  inputWidthidth: string;
+  inputWidth: string;
 }
 
 //爆弾数の定義
@@ -54,22 +54,23 @@ interface BombCount {
   inputBombs: string;
 }
 
+const DIRECTIONS = [
+  [0, -1],
+  [1, -1],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+  [-1, 1],
+  [-1, 0],
+  [-1, -1],
+];
+
 //計算値
-function calcBoard(
+function generateBoard(
   userInputs: number[][],
   bombMap: number[][],
   currentHeight: number,
   currentWidth: number,
-  directions = [
-    [0, -1],
-    [1, -1],
-    [1, 0],
-    [1, 1],
-    [0, 1],
-    [-1, 1],
-    [-1, 0],
-    [-1, -1],
-  ],
 ) {
   const board: number[][] = Array.from({ length: currentHeight }, () =>
     Array.from({ length: currentWidth }, () => 0),
@@ -82,7 +83,7 @@ function calcBoard(
         board[y][x] = 11 + (userInputs[y][x] + 8) * 100;
       } else {
         let count = 0;
-        for (const [dx, dy] of directions) {
+        for (const [dx, dy] of DIRECTIONS) {
           const nx = x + dx;
           const ny = y + dy;
           if (
@@ -99,10 +100,13 @@ function calcBoard(
       }
     }
   }
+  return board;
+}
 
-  //再帰関数  boardSizeが70×70近くになると落ちる
+//再帰関数  boardSizeが70×70近くになると落ちる
+function chainZero(board: number[][], currentHeight: number, currentWidth: number) {
   const openZeroCheck = (x: number, y: number) => {
-    for (const [dx, dy] of directions) {
+    for (const [dx, dy] of DIRECTIONS) {
       const nx = x + dx;
       const ny = y + dy;
       if (
@@ -129,8 +133,16 @@ function calcBoard(
       }
     }
   }
+  return board;
+}
 
-  //爆弾が開かれた場合、爆弾の位置に400を足す
+//爆弾が開かれた場合、爆弾の位置に400を足す
+function openAllBombs(
+  board: number[][],
+  bombMap: number[][],
+  currentHeight: number,
+  currentWidth: number,
+) {
   if (board.flat().includes(1211)) {
     for (let y = 0; y < currentHeight; y++) {
       for (let x = 0; x < currentWidth; x++) {
@@ -140,6 +152,18 @@ function calcBoard(
       }
     }
   }
+  return board;
+}
+
+function calcBoard(
+  userInputs: number[][],
+  bombMap: number[][],
+  currentHeight: number,
+  currentWidth: number,
+): number[][] {
+  const board = generateBoard(userInputs, bombMap, currentHeight, currentWidth);
+  chainZero(board, currentHeight, currentWidth);
+  openAllBombs(board, bombMap, currentHeight, currentWidth);
   return board;
 }
 
@@ -164,7 +188,7 @@ export default function Home() {
     height: GAMEMODE_SETTINGS.easy.height,
     width: GAMEMODE_SETTINGS.easy.width,
     inputHeight: String(GAMEMODE_SETTINGS.easy.height),
-    inputWidthidth: String(GAMEMODE_SETTINGS.easy.width),
+    inputWidth: String(GAMEMODE_SETTINGS.easy.width),
   });
 
   //爆弾数
@@ -210,7 +234,7 @@ export default function Home() {
 
   //盤面リセット
   const resetBoard = (height: number, width: number, count: number) => {
-    setBoardSize({ height, width, inputHeight: String(height), inputWidthidth: String(width) });
+    setBoardSize({ height, width, inputHeight: String(height), inputWidth: String(width) });
     setBombCount({ count, inputBombs: String(count) });
     setUserInputs(Array.from({ length: height }, () => Array.from({ length: width }, () => 0)));
     setBombMap(Array.from({ length: height }, () => Array.from({ length: width }, () => 0)));
@@ -241,7 +265,7 @@ export default function Home() {
       //ここ綺麗にできそう
       //入力値
       const heightInput = Number(boardSize.inputHeight),
-        widthInput = Number(boardSize.inputWidthidth),
+        widthInput = Number(boardSize.inputWidth),
         bombsInput = Number(bombCount.inputBombs);
       //場合によってalertを変える
       if (
@@ -277,29 +301,41 @@ export default function Home() {
   };
 
   // 左クリック処理
-  const leftClickHandler = (x: number, y: number) => {
-    if (userInputs[y][x] === 4) return;
-
+  const first = (x: number, y: number) => {
+    setTimeCount(0);
     const newBombMap = structuredClone(bombMap);
-    if (!newBombMap.flat().some((cell) => cell === 1)) {
-      setTimeCount(0);
-
-      //爆弾を初期設置
-      let count = 0;
-      while (count < bombCount.count) {
-        const rx = Math.floor(Math.random() * boardSize.width);
-        const ry = Math.floor(Math.random() * boardSize.height);
-        if ((ry === y && rx === x) || newBombMap[ry][rx] === 1) continue;
-        count++;
-        newBombMap[ry][rx] = 1;
-      }
-      setBombMap(newBombMap);
+    let count = 0;
+    while (count < bombCount.count) {
+      const rx = Math.floor(Math.random() * boardSize.width);
+      const ry = Math.floor(Math.random() * boardSize.height);
+      if ((ry === y && rx === x) || newBombMap[ry][rx] === 1) continue;
+      count++;
+      newBombMap[ry][rx] = 1;
     }
+    setBombMap(newBombMap);
 
+    const newUserInputs = structuredClone(userInputs);
+    newUserInputs[y][x] = 4;
+    setUserInputs(newUserInputs);
+  };
+
+  const second = (x: number, y: number) => {
     const newUserInputs = structuredClone(userInputs);
     if (newUserInputs[y][x] !== 0) return;
     newUserInputs[y][x] = 4;
     setUserInputs(newUserInputs);
+  };
+
+  const leftClickHandler = (x: number, y: number) => {
+    if (isGameOver || isGameClear) return;
+    if (userInputs[y][x] === 4) return;
+
+    const isFirstClick = !bombMap.flat().some((cell) => cell === 1);
+    if (isFirstClick) {
+      first(x, y);
+    } else {
+      second(x, y);
+    }
   };
 
   //残り爆弾数
@@ -320,8 +356,8 @@ export default function Home() {
               幅:{' '}
               <input
                 type="number"
-                value={boardSize.inputWidthidth}
-                onChange={(e) => setBoardSize((p) => ({ ...p, inputWidthidth: e.target.value }))}
+                value={boardSize.inputWidth}
+                onChange={(e) => setBoardSize((p) => ({ ...p, inputWidth: e.target.value }))}
                 style={{ width: '50px' }}
               />
             </label>
