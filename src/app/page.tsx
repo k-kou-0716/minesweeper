@@ -269,36 +269,36 @@ export default function Home() {
     }
   };
 
-  //カスタム設定更新,リセット
-  const resetClickHandler = () => {
-    //カスタム設定更新
-    if (selectedGameMode === 'custom') {
-      //ここ綺麗にできそう
-      //入力値
-      const heightInput = Number(boardSize.inputHeight),
-        widthInput = Number(boardSize.inputWidth),
-        bombsInput = Number(bombCount.inputBombs);
-      //場合によってalertを変える
-      if (
-        1 <= heightInput &&
-        heightInput <= 100 &&
-        1 <= widthInput &&
-        widthInput <= 100 &&
-        1 <= bombsInput &&
-        bombsInput < heightInput * widthInput
-      ) {
-        resetBoard(heightInput, widthInput, bombsInput);
-      } else {
-        alert('規格外です。');
-      }
+  //カスタム設定更新
+  const applyCustomHandler = () => {
+    //ここ綺麗にできそう
+    //入力値
+    const heightInput = Number(boardSize.inputHeight),
+      widthInput = Number(boardSize.inputWidth),
+      bombsInput = Number(bombCount.inputBombs);
+    //場合によってalertを変える
+    if (
+      1 <= heightInput &&
+      heightInput <= 100 &&
+      1 <= widthInput &&
+      widthInput <= 100 &&
+      1 <= bombsInput &&
+      bombsInput < heightInput * widthInput
+    ) {
+      resetBoard(heightInput, widthInput, bombsInput);
     } else {
-      //リセット
-      resetBoard(
-        GAMEMODE_SETTINGS[selectedGameMode].height,
-        GAMEMODE_SETTINGS[selectedGameMode].width,
-        GAMEMODE_SETTINGS[selectedGameMode].bombs,
-      );
+      alert('規格外です。');
     }
+  };
+
+  //リセット
+  const resetClickHandler = () => {
+    //リセット
+    resetBoard(
+      GAMEMODE_SETTINGS[selectedGameMode].height,
+      GAMEMODE_SETTINGS[selectedGameMode].width,
+      GAMEMODE_SETTINGS[selectedGameMode].bombs,
+    );
   };
 
   // 右クリック処理
@@ -391,7 +391,7 @@ export default function Home() {
                 style={{ width: '50px' }}
               />
             </label>
-            <button onClick={resetClickHandler} style={{ marginLeft: '10px' }}>
+            <button onClick={applyCustomHandler} style={{ marginLeft: '10px' }}>
               更新
             </button>
           </div>
