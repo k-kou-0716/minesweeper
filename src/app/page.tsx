@@ -171,7 +171,7 @@ function calcBoard(
 }
 
 //ゼロパディング
-function paddingZero(Number: number) {
+function paddingZeroCount(Number: number) {
   return String(Number).padStart(3, '0');
 }
 
@@ -308,6 +308,7 @@ export default function Home() {
   const rightClickHandler = (x: number, y: number, e: React.MouseEvent) => {
     //メニューを開かない
     e.preventDefault();
+    if (gameStatus === 'gameOver' || gameStatus === 'gameClear') return;
     if (userInputs[y][x] === 4) return;
     const newUserInputs = structuredClone(userInputs);
     newUserInputs[y][x] = (newUserInputs[y][x] + 1) % 3;
@@ -315,7 +316,7 @@ export default function Home() {
   };
 
   // 左クリック処理
-  const first = (x: number, y: number) => {
+  const leftInitialClick = (x: number, y: number) => {
     //タイマーを０からスタート
     setTimeCount(0);
     //爆弾初期配置
@@ -335,7 +336,7 @@ export default function Home() {
     setUserInputs(newUserInputs);
   };
 
-  const second = (x: number, y: number) => {
+  const leftNormalClick = (x: number, y: number) => {
     const newUserInputs = structuredClone(userInputs);
     if (newUserInputs[y][x] !== 0) return;
     newUserInputs[y][x] = 4;
@@ -347,14 +348,14 @@ export default function Home() {
     if (userInputs[y][x] === 4) return;
 
     if (gameStatus === 'waiting') {
-      first(x, y);
+      leftInitialClick(x, y);
     } else {
-      second(x, y);
+      leftNormalClick(x, y);
     }
   };
 
   //残り爆弾数
-  const bombNumberDisplay = bombCount.count - userInputs.flat().filter((cell) => cell === 2).length;
+  const bombDisplayCount = bombCount.count - userInputs.flat().filter((cell) => cell === 2).length;
 
   return (
     <div className={styles.container}>
@@ -417,7 +418,7 @@ export default function Home() {
             height: 30 * boardSize.height + 12,
           }}
         />
-        <div className={styles.smile} onClick={resetClickHandler}>
+        <div className={styles.smileResetButton} onClick={resetClickHandler}>
           <div
             className={styles.design}
             style={{
@@ -430,11 +431,11 @@ export default function Home() {
             }}
           />
         </div>
-        <div className={styles.time} style={{ color: 'red' }}>
-          {paddingZero(timeCount)}
+        <div className={styles.timerDisplay} style={{ color: 'red' }}>
+          {paddingZeroCount(timeCount)}
         </div>
         <div className={styles.bombNumberDisplay} style={{ color: 'red' }}>
-          {paddingZero(bombNumberDisplay)}
+          {paddingZeroCount(bombDisplayCount)}
         </div>
         <div
           className={styles.gameBoard}

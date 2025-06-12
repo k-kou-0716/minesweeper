@@ -52,7 +52,7 @@
   border-left: solid 1px gray;
 }
 
-.smile {
+.smileResetButton {
   position: absolute;
   top: 22px;
   display: flex;
@@ -66,7 +66,7 @@
   border-left: solid 4px white;
 }
 
-.smile:active {
+.smileResetButton:active {
   position: absolute;
   top: 22px;
   display: flex;
@@ -80,7 +80,7 @@
   border-left: solid 4px gray;
 }
 
-.time {
+.timerDisplay {
   position: absolute;
   top: 22px;
   right: 22px;
