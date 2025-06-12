@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
 //やること
-//resetClickHandler => リセット、入力値は正しいか、に分割
 //マジックナンバーを消す=>cellの状態を定義する、もしくは、cellにタプル型？などを利用し、2つの情報を入れる
 //動作が重い=>どうしたら改善するのかよくわからない、再帰関数かcalcBoard
-//見た目が悪い=>時計、爆弾の残数の素材を拾ってくる
-//timeCountを先頭に0を追加し、強制三桁にする。その後一桁ずつ分離。マイナスをどうするか考える
+
+//const gameStatus: 'waiting' | 'playing' | 'gameOver' | 'gameClear';
 
 //難易度の種類を定義
 //[number]インデックスアクセス型、要素すべて持ってくるユニオン型
