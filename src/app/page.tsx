@@ -7,8 +7,6 @@ import styles from './page.module.css';
 //マジックナンバーを消す=>cellの状態を定義する、もしくは、cellにタプル型？などを利用し、2つの情報を入れる
 //動作が重い=>どうしたら改善するのかよくわからない、再帰関数かcalcBoard
 
-//const gameStatus: 'waiting' | 'playing' | 'gameOver' | 'gameClear';
-
 //難易度の種類を定義
 //[number]インデックスアクセス型、要素すべて持ってくるユニオン型
 //type Level = (typeof STANDARD_LEVELS)[number]; 今後使うかも
@@ -222,14 +220,20 @@ export default function Home() {
     boardSize.height * boardSize.width +
       calculatedBoardData.flat().filter((cell) => cell === 1211 || cell === 1611).length -
       calculatedBoardData.flat().filter((cell) => cell >= 1200).length;
+  //ゲームが始まっているか？
+  const isPlaying = bombMap.flat().some((cell) => cell === 1) && !isGameOver && !isGameClear;
+  //マインスイーパの進行状況
+  const gameStatus: 'waiting' | 'playing' | 'gameOver' | 'gameClear' = isGameClear
+    ? 'gameClear'
+    : isGameOver
+      ? 'gameOver'
+      : isPlaying
+        ? 'playing'
+        : 'waiting';
 
   useEffect(() => {
-    // ゲームが進行中かどうか
-    const isGameInProgress =
-      bombMap.flat().some((cell) => cell === 1) && !isGameOver && !isGameClear;
-
-    // ゲームが進行中ならタイマーを開始する
-    if (isGameInProgress) {
+    //ゲームが進行中ならタイマーを開始する
+    if (gameStatus === 'playing') {
       const timerId = setInterval(() => {
         setTimeCount((prevCount) => prevCount + 1);
       }, 1000);
@@ -239,8 +243,8 @@ export default function Home() {
         clearInterval(timerId);
       };
     }
-    // bombMap, isGameOver, isGameClearの状態が変わるたびに更新
-  }, [bombMap, isGameOver, isGameClear]);
+    //gameStatusの進行状況が変わるたびに
+  }, [gameStatus]);
 
   //盤面リセット
   const resetBoard = (height: number, width: number, count: number) => {
@@ -312,7 +316,9 @@ export default function Home() {
 
   // 左クリック処理
   const first = (x: number, y: number) => {
+    //タイマーを０からスタート
     setTimeCount(0);
+    //爆弾初期配置
     const newBombMap = structuredClone(bombMap);
     let count = 0;
     while (count < bombCount.count) {
@@ -337,11 +343,10 @@ export default function Home() {
   };
 
   const leftClickHandler = (x: number, y: number) => {
-    if (isGameOver || isGameClear) return;
+    if (gameStatus === 'gameOver' || gameStatus === 'gameClear') return;
     if (userInputs[y][x] === 4) return;
 
-    const isFirstClick = !bombMap.flat().some((cell) => cell === 1);
-    if (isFirstClick) {
+    if (gameStatus === 'waiting') {
       first(x, y);
     } else {
       second(x, y);
@@ -416,7 +421,12 @@ export default function Home() {
           <div
             className={styles.design}
             style={{
-              backgroundPosition: isGameOver ? '-390px' : isGameClear ? '-360px' : '-330px',
+              backgroundPosition:
+                gameStatus === 'gameOver'
+                  ? '-390px'
+                  : gameStatus === 'gameClear'
+                    ? '-360px'
+                    : '-330px',
             }}
           />
         </div>
@@ -436,9 +446,15 @@ export default function Home() {
                 key={`${x}-${y}`}
                 className={`${styles.cell} ${cell < 1200 ? styles.cover : ''}`}
                 style={{ background: cell === 1611 ? 'red' : '' }}
-                onClick={isGameOver || isGameClear ? undefined : () => leftClickHandler(x, y)}
+                onClick={
+                  gameStatus === 'gameOver' || gameStatus === 'gameClear'
+                    ? undefined
+                    : () => leftClickHandler(x, y)
+                }
                 onContextMenu={
-                  isGameOver || isGameClear ? undefined : (e) => rightClickHandler(x, y, e)
+                  gameStatus === 'gameOver' || gameStatus === 'gameClear'
+                    ? undefined
+                    : (e) => rightClickHandler(x, y, e)
                 }
               >
                 <div
