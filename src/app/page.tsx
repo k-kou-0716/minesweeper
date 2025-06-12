@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
+//確認
 
 //やること
 //マジックナンバーを消す=>cellの状態を定義する、もしくは、cellにタプル型？などを利用し、2つの情報を入れる
